@@ -4,13 +4,13 @@ const Cart = require("../models/cartModel");
 const addToCart = asyncHandler(async (req, res) => {
   const { cartItem, quantity } = req.body;
   const { _id } = req.user;
-
+  console.log(_id)
   try {
     const cart = await Cart.findOne({ userId: _id });
 
     if (cart) {
       const existingProduct = cart.products.find(
-        (product) => product.cartItem.toString() === cartItem
+        (product) => product.cartItem === cartItem
       );
 
       if (existingProduct) {
@@ -18,10 +18,10 @@ const addToCart = asyncHandler(async (req, res) => {
       } else {
         cart.products.push({ cartItem, quantity });
       }
-
       await cart.save();
       res.status(200).json("Added to cart");
     } else {
+      console.log("2");
       const newCart = new Cart({
         userId: _id,
         products: [{ cartItem, quantity }],
@@ -37,12 +37,9 @@ const addToCart = asyncHandler(async (req, res) => {
 
 const getCart = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-
+  console.log(userId);
   try {
-    const cart = await Cart.findOne({ userId }).populate(
-      "products.cartItem",
-      "_id name price image"
-    );
+    const cart = await Cart.findOne({ userId })
 
     res.status(200).json(cart);
   } catch (error) {
