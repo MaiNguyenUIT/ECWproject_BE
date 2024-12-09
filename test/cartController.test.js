@@ -5,10 +5,12 @@ const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 
+
 let mongoServer;
 
 jest.mock("../models/cartModel");  // Mock Cart model
 
+//Add to cart
 describe("addToCart", () => {
   let req, res;
 
@@ -66,6 +68,7 @@ describe("addToCart", () => {
   });
 });
 
+//Get Cart
 describe("getCart", () => {
   let req, res;
 
@@ -112,4 +115,235 @@ describe("getCart", () => {
   });
 });
 
+//Delete Cart
+// describe("deleteCartItem", () => {
+//   let req, res;
 
+//   beforeEach(() => {
+//     req = httpMocks.createRequest();
+//     res = httpMocks.createResponse();
+//   });
+
+//   it("should delete a product from the cart and return updated cart", async () => {
+//     // Mock Cart data
+//     const mockCartItemId = new mongoose.Types.ObjectId()
+//     const mockCart = {
+//       userId: 1234567,
+//       products: [
+//         { cartItem: mockCartItemId, quantity: 2 },
+//         { cartItem: new mongoose.Types.ObjectId(), quantity: 1 },
+//       ],
+//       save: jest.fn(),
+//     };
+
+//     // Mô phỏng Cart.findOneAndUpdate để trả về giỏ hàng đã được cập nhật
+//     Cart.updateOne.mockResolvedValue({
+//       acknowledged: true,
+//       matchedCount: 1,
+//       modifiedCount: 1,
+//     });
+
+//     // Cấu hình request
+//     req.params.cartItemId = mockCartItemId;
+//     req.user = { _id : mockCart.userId };
+
+//     Cart.findOne.mockResolvedValue(mockCart); // Giả lập Cart.findOne cho ví dụ này
+
+//     // Gọi controller deleteCartItem
+//     await deleteCartItem(req, res);
+    
+//     // Kiểm tra xem API đã trả về mã trạng thái 200
+//     expect(res.statusCode).toBe(200);
+
+//     // Kiểm tra xem sản phẩm đã được xóa chưa
+    
+//     const responseData = res._getData();
+//     expect(responseData.products.length).toBe(1);  // Giỏ hàng còn lại 1 sản phẩm
+//     expect(responseData.products[0]._id).not.toBe(mockCartItemId);  // Sản phẩm cũ bị xóa
+//   });
+
+//   it("should return 404 if cart item is not found", async () => {
+//     const mockCartItemId = new mongoose.Types.ObjectId();
+
+//     // Mô phỏng Cart.findOneAndUpdate không tìm thấy sản phẩm
+//     Cart.findOneAndUpdate.mockResolvedValue(null);
+
+//     // Cấu hình request
+//     req.params.cartItemId = mockCartItemId;
+//     req.user = 1234567;
+
+//     // Gọi controller deleteCartItem
+//     await deleteCartItem(req, res);
+
+//     // Kiểm tra mã trạng thái trả về
+//     expect(res.statusCode).toBe(404);
+
+//     // Kiểm tra phản hồi lỗi
+//     const responseData = res._getData();  // Lấy phản hồi
+//     expect(responseData.replace(/"/g, '')).toBe("Cart item not found");
+//   });
+// });
+
+describe("increaseCartItem", () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = httpMocks.createRequest();
+    res = httpMocks.createResponse();
+  });
+
+  it("should increase the quantity of an existing cart item", async () => {
+    const userId = 1234567;
+    const cartItemId = new mongoose.Types.ObjectId();
+    
+    // Mock data
+    const mockCart = {
+      userId,
+      products: [{ cartItem: cartItemId, quantity: 1 }],
+      save: jest.fn().mockResolvedValue(true),
+    };
+
+    req.user = { _id: userId };
+    req.body = { cartItem: cartItemId.toString() };
+
+    Cart.findOne.mockResolvedValue(mockCart);
+
+    await increaseCartItem(req, res);
+
+    // Assertions
+    expect(mockCart.products[0].quantity).toBe(2); // Quantity increased
+    expect(mockCart.save).toHaveBeenCalled(); // Save called
+    expect(res.statusCode).toBe(200); // HTTP status is 200
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Cart item updated"); // Correct response message
+  });
+
+  it("should return 404 if the cart is not found", async () => {
+    req.user = { _id: 1234567 };
+    req.body = { cartItem: new mongoose.Types.ObjectId().toString() };
+
+    Cart.findOne.mockResolvedValue(null); // Simulate no cart found
+
+    await increaseCartItem(req, res);
+
+    // Assertions
+    expect(res.statusCode).toBe(404); // HTTP status is 404
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Cart not found"); // Correct response message
+  });
+
+  it("should return 404 if the product is not found in the cart", async () => {
+    const userId = 1234567;
+    const cartItemId = new mongoose.Types.ObjectId();
+
+    const mockCart = {
+      userId,
+      products: [{ cartItem: new mongoose.Types.ObjectId(), quantity: 1 }], // Different cartItem
+      save: jest.fn(),
+    };
+
+    req.user = { _id: 1234567 };
+    req.body = { cartItem: cartItemId.toString() };
+
+    Cart.findOne.mockResolvedValue(mockCart);
+
+    await increaseCartItem(req, res);
+
+    // Assertions
+    expect(res.statusCode).toBe(404); // HTTP status is 404
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Product not found");; // Correct response message
+  });
+});
+//
+describe("decrementCartItem", () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = httpMocks.createRequest();
+    res = httpMocks.createResponse();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should return 404 if cart is not found", async () => {
+    req.user = { _id: 1234567 };
+    req.body = { cartItem: new mongoose.Types.ObjectId() };
+
+    Cart.findOne.mockResolvedValue(null);
+
+    await decrementCartItem(req, res);
+
+    expect(res.statusCode).toBe(404);
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Cart not found");
+  });
+
+  it("should return 404 if product is not found in the cart", async () => {
+    const mockCart = {
+      userId: 1234567,
+      products: [],
+      save: jest.fn(),
+    };
+
+    req.user = { _id: 1234567 };
+    req.body = { cartItem: new mongoose.Types.ObjectId() };
+
+    Cart.findOne.mockResolvedValue(mockCart);
+
+    await decrementCartItem(req, res);
+
+    expect(res.statusCode).toBe(404);
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Product not found");; // Correct response message
+  });
+
+  it("should decrement quantity if product exists and quantity > 1", async () => {
+    const userId = 1234567;
+    const cartItemId = new mongoose.Types.ObjectId();
+    const mockCart = {
+      userId: 1234567,
+      products: [{ cartItem: cartItemId, quantity: 2 }],
+      save: jest.fn(),
+    };
+
+    req.user = { _id: userId };
+    req.body = { cartItem: cartItemId };
+
+    Cart.findOne.mockResolvedValue(mockCart);
+
+    await decrementCartItem(req, res);
+
+    expect(mockCart.products[0].quantity).toBe(1); // Quantity giảm đi 1
+    expect(mockCart.save).toHaveBeenCalled(); // Phương thức save được gọi
+    expect(res.statusCode).toBe(200);
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Cart item updated");
+  });
+
+  it("should remove product from cart if quantity becomes 0", async () => {
+    const cartItemId = new mongoose.Types.ObjectId();
+    const userId = 1234567;
+    const mockCart = {
+      userId: 1234567,
+      products: [{ cartItem: cartItemId, quantity: 1 }],
+      save: jest.fn(),
+    };
+
+    req.user = { _id: userId };
+    req.body = { cartItem: cartItemId };
+
+    Cart.findOne.mockResolvedValue(mockCart);
+    Cart.updateOne.mockResolvedValue({});
+
+    await decrementCartItem(req, res);
+
+    expect(mockCart.products.length).toBe(0); // Sản phẩm bị xóa khỏi giỏ hàng
+    expect(mockCart.save).toHaveBeenCalled(); // Phương thức save được gọi
+    expect(res.statusCode).toBe(200);
+    const responseData = res._getData();  // Lấy phản hồi
+    expect(responseData.replace(/"/g, '')).toBe("Cart item updated");
+  });
+});

@@ -38,7 +38,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
   });
-
+  console.log(user._id);
   // Generate token
   const token = generateToken(user._id);
 
