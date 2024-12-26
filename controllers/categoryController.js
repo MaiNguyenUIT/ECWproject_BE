@@ -30,7 +30,7 @@ const getCategory = asyncHandler(async (req, res) => {
 
 // Get all categories
 const getCategories = asyncHandler(async (req, res) => {
-    const categories = await Category.find().sort("-createdAt");
+    const categories = await Category.find();
     res.status(200).json(categories);
 });
 

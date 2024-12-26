@@ -92,6 +92,7 @@ const createPaymentUrl = asyncHandler(async (req, res) => {
 
 // Create order
 const createOrder = asyncHandler(async (req, res) => {
+  console.log(req.user)
   const { _id } = req.user;
   const {
     orderDate,

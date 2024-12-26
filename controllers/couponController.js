@@ -23,6 +23,7 @@ const getCoupons = asyncHandler(async (req, res) => {
 // Get a single coupon
 const getCoupon = asyncHandler(async (req, res) => {
     const { name } = req.params;
+    console.log(name);
     try {
         const coupon = await Coupon.findOne({ name });
         if (!coupon) {
@@ -37,8 +38,12 @@ const getCoupon = asyncHandler(async (req, res) => {
 // Update a coupon
 const updateCoupon = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const find = Coupon.findById(id);
     try {
         const updatedCoupon = await Coupon.findByIdAndUpdate(id, req.body, { new: true });
+        if (!updateCoupon) {
+            return res.status(404).json({ message: 'Coupon not found' });
+        }
         res.status(200).json(updatedCoupon);
     } catch (error) {
         throw new Error(error);
@@ -49,6 +54,9 @@ const deleteCoupon = asyncHandler(async (req, res) => {
     const { id } = req.params;
     try {
         const deletedCoupon = await Coupon.findByIdAndDelete(id);
+        if (!deletedCoupon) {
+            return res.status(404).json({ message: 'Coupon not found' });
+        }
         res.status(200).json(deletedCoupon);
     } catch (error) {
         throw new Error(error);
